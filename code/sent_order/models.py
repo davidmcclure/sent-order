@@ -54,6 +54,8 @@ class Token(Model):
 
     @classmethod
     def from_spacy_token(cls, token):
+        """Map in token.
+        """
         return cls(
             text=token.text,
             lemma=token.lemma_,
@@ -73,8 +75,12 @@ class Sentence(Model):
 
     @classmethod
     def from_text(cls, text):
+        """Parse sentence.
+        """
         doc = nlp(text)
+
         tokens = list(map(Token.from_spacy_token, doc))
+
         return cls(text, tokens)
 
 
@@ -88,4 +94,8 @@ class Abstract(Model):
 
     @classmethod
     def from_lines(cls, lines):
-        pass
+        """Parse abstract lines.
+        """
+        sentences = list(map(Sentence.from_text, lines[2:]))
+
+        return cls(lines[0], lines[1].split(), sentences)
