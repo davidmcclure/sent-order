@@ -37,6 +37,30 @@ class Model(metaclass=ModelMeta):
         return cls(**row.asDict())
 
 
+class Token(Model):
+
+    schema = T.StructType([
+        T.StructField('text', T.StringType()),
+        T.StructField('lemma', T.StringType()),
+        T.StructField('pos', T.StringType()),
+        T.StructField('tag', T.StringType()),
+        T.StructField('dep', T.StringType()),
+        T.StructField('shape', T.StringType()),
+    ])
+
+
+class Sentence(Model):
+
+    schema = T.StructType([
+        T.StructField('text', T.StringType()),
+        T.StructField('tokens', T.ArrayType(Token.schema)),
+    ])
+
+
 class Abstract(Model):
 
-    schema = T.StructType()
+    schema = T.StructType([
+        T.StructField('id', T.StringType(), nullable=False),
+        T.StructField('tags', T.ArrayType(Tag.schema)),
+        T.StructField('sentences', T.ArrayType(Sentence.schema)),
+    ])
