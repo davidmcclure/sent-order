@@ -48,6 +48,10 @@ class Token(Model):
         T.StructField('shape', T.StringType()),
     ])
 
+    @classmethod
+    def from_spacy_token(cls, token):
+        pass
+
 
 class Sentence(Model):
 
@@ -55,6 +59,10 @@ class Sentence(Model):
         T.StructField('text', T.StringType()),
         T.StructField('tokens', T.ArrayType(Token.schema)),
     ])
+
+    @classmethod
+    def from_text(cls, text):
+        pass
 
 
 class Abstract(Model):
@@ -64,3 +72,7 @@ class Abstract(Model):
         T.StructField('tags', T.ArrayType(Tag.schema)),
         T.StructField('sentences', T.ArrayType(Sentence.schema)),
     ])
+
+    @classmethod
+    def from_lines(cls, lines):
+        pass
