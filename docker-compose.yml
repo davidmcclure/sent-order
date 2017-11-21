@@ -5,7 +5,7 @@ services:
 
   dev:
     build: .
-    image: dclure/twitter-ext
+    image: dclure/sent-order
     env_file:
       - build/dev.env
     volumes:
