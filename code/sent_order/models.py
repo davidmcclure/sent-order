@@ -1,9 +1,13 @@
 
 
 import re
+import spacy
 
 from collections import namedtuple
 from pyspark.sql import SparkSession, types as T
+
+
+nlp = spacy.load('en')
 
 
 class ModelMeta(type):
@@ -50,7 +54,14 @@ class Token(Model):
 
     @classmethod
     def from_spacy_token(cls, token):
-        pass
+        return cls(
+            text=token.text,
+            lemma=token.lemma_,
+            pos=token.pos_,
+            tag=token.tag_,
+            dep=token.dep_,
+            shape=token.shape_,
+        )
 
 
 class Sentence(Model):
@@ -62,14 +73,16 @@ class Sentence(Model):
 
     @classmethod
     def from_text(cls, text):
-        pass
+        doc = nlp(text)
+        tokens = list(map(Token.from_spacy_token, doc))
+        return cls(text, tokens)
 
 
 class Abstract(Model):
 
     schema = T.StructType([
         T.StructField('id', T.StringType(), nullable=False),
-        T.StructField('tags', T.ArrayType(Tag.schema)),
+        T.StructField('tags', T.ArrayType(T.StringType())),
         T.StructField('sentences', T.ArrayType(Sentence.schema)),
     ])
 
