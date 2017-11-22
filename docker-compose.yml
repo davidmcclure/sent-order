@@ -5,7 +5,6 @@ services:
 
   dev:
     build: .
-    image: dclure/sent-order
     env_file:
       - build/dev.env
     volumes:
@@ -13,3 +12,7 @@ services:
       - ./data:/data
     ports:
       - '8888:8888'
+
+  prod:
+    build: .
+    image: dclure/sent-order
