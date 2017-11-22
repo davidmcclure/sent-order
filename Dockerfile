@@ -56,8 +56,9 @@ COPY build/spark-defaults.conf $SPARK_HOME/conf
 
 # Code
 ADD code/requirements.txt /etc
-RUN pip install -r /etc/requirements.txt
-RUN python -m spacy download en
+
+RUN pip install -r /etc/requirements.txt && \
+  python -m spacy download en
 
 ADD code /code
 WORKDIR /code
