@@ -5,6 +5,7 @@ import spacy
 
 from collections import namedtuple
 from pyspark.sql import SparkSession, types as T
+from inflection import singularize
 
 
 nlp = spacy.load('en')
@@ -30,7 +31,7 @@ class ModelMeta(type):
 class Model(metaclass=ModelMeta):
 
     @classmethod
-    def from_rdd(cls, row):
+    def from_row(cls, row):
         """Wrap a raw `Row` instance from an RDD as a model instance.
 
         Args:
@@ -39,6 +40,23 @@ class Model(metaclass=ModelMeta):
         Returns: Model
         """
         return cls(**row.asDict())
+
+    def __getattr__(self, attr):
+        """Automatically re-wrap nested collections.
+        """
+        if attr.startswith('_'):
+
+            field = attr[1:]
+
+            cls_name = singularize(field).capitalize()
+            cls = globals()[cls_name]
+
+            return self.wrap_children(field, cls)
+
+    def wrap_children(self, field, cls):
+        """Re-wrap a nested collection.
+        """
+        return list(map(cls.from_row, getattr(self, field)))
 
 
 class Token(Model):

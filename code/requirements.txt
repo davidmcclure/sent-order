@@ -2,5 +2,7 @@
 ipython
 click
 jupyter
+cached-property
+inflection
 
 spacy==2.0.3
