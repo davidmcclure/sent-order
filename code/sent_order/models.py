@@ -90,12 +90,18 @@ class Abstract(Model):
         T.StructField('id', T.StringType(), nullable=False),
         T.StructField('tags', T.ArrayType(T.StringType())),
         T.StructField('sentences', T.ArrayType(Sentence.schema)),
+        T.StructField('split', T.StringType()),
     ])
 
     @classmethod
-    def from_lines(cls, lines):
+    def from_lines(cls, lines, split):
         """Parse abstract lines.
         """
         sentences = list(map(Sentence.from_text, lines[2:]))
 
-        return cls(lines[0], lines[1].split(), sentences)
+        return cls(
+            id=lines[0],
+            tags=lines[1].split(),
+            sentences=sentences,
+            split=split,
+        )
