@@ -1,0 +1,9 @@
+---
+
+dependencies:
+
+  - role: ec2-instance
+    ec2_name: spark-master
+    ec2_tag: spark-master
+    ec2_instance_type: c3.2xlarge
+    ec2_group: spark

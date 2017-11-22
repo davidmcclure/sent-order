@@ -1,0 +1,9 @@
+---
+
+- name: Deploy master
+  become: yes
+  hosts:
+    - tag_mit_spark_master
+    - tag_mit_spark_worker
+  roles:
+    - spark
