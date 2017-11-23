@@ -25,6 +25,21 @@ def most_freq_ngrams(abstracts, key, n, depth, lower=False):
     return [r.ngram for r in counts]
 
 
+def build_vocab(abstracts):
+    """Get set of ngram features.
+    """
+    vocab = []
+
+    for n in (1, 2, 3):
+        vocab += most_freq_ngrams(abstracts, 'text', n, 1000, True)
+
+    for key in ('lemma', 'pos', 'tag', 'dep', 'shape'):
+        for n in (1, 2, 3):
+            vocab += most_freq_ngrams(abstracts, key, n, 200)
+
+    return set(vocab)
+
+
 @click.command()
 @click.option('--src', default='/data/abstracts.parquet')
 def main(src):
@@ -32,9 +47,14 @@ def main(src):
     """
     df = spark.read.parquet(src)
 
-    rdd = df.rdd.map(Abstract.from_row)
+    train = df.filter(df.split=='train')
 
-    print(most_freq_ngrams(rdd, 'text', 2, 100, True))
+    rdd = train.rdd.map(Abstract.from_row)
+
+    vocab = build_vocab(rdd)
+
+    print(vocab)
+    print(len(vocab))
 
 
 if __name__ == '__main__':
