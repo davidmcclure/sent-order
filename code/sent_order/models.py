@@ -6,6 +6,7 @@ import spacy
 from collections import namedtuple
 from pyspark.sql import SparkSession, types as T
 from inflection import singularize
+from boltons.iterutils import windowed
 
 
 nlp = spacy.load('en')
@@ -100,6 +101,17 @@ class Sentence(Model):
         tokens = list(map(Token.from_spacy_token, doc))
 
         return cls(text, tokens)
+
+    def ngrams(self, key, n, lower=False, sep='_'):
+        """Generate ngrams from tokens.
+        """
+        texts = [t[key] for t in self.tokens]
+
+        if lower:
+            texts = [t.lower() for t in texts]
+
+        for ng in windowed(texts, n):
+            yield sep.join(ng)
 
 
 class Abstract(Model):

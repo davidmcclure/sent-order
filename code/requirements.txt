@@ -3,6 +3,7 @@ ipython
 click
 jupyter
 cached-property
+boltons
 inflection
 
 spacy==2.0.3
