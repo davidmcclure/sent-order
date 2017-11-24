@@ -2,6 +2,8 @@
 
 import click
 
+from pyspark.sql import Row
+
 from sent_order.utils import get_spark
 from sent_order.models import Abstract
 
@@ -36,31 +38,40 @@ def build_vocab(df):
     vocab = []
 
     for n in (1, 2, 3):
-        vocab += most_freq_ngrams(df, 'text', n, 2000)
+        vocab += most_freq_ngrams(df, 'text', n, 1000)
 
     for key in ('pos', 'tag', 'dep'):
         for n in (1, 2, 3):
-            vocab += most_freq_ngrams(df, key, n, 200)
+            vocab += most_freq_ngrams(df, key, n, 100)
 
     return set(vocab)
 
 
 @click.command()
 @click.option('--src', default='/data/abstracts.parquet')
+@click.option('--dest', default='/data/xy.json')
 @click.option('--split', default=None)
-def main(src, split):
+def main(src, dest, split):
     """Count tokens.
     """
     sc, spark = get_spark()
 
     df = spark.read.parquet(src)
 
+    vocab = build_vocab(df)
+
     if split:
         df = df.filter(df.split==split)
 
-    vocab = build_vocab(df)
+    xy = (
+        df.rdd
+        .map(Abstract.from_row)
+        .flatMap(lambda a: list(a.xy(vocab)))
+        .map(lambda r: Row(x=r[0], y=r[1]))
+        .toDF()
+    )
 
-    print(vocab)
+    xy.write.mode('overwrite').json(dest)
 
 
 if __name__ == '__main__':

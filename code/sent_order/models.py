@@ -135,7 +135,7 @@ class Sentence(Model):
 
     def avg_word_len(self):
         word_lens = [len(t.text) for t in self.tokens]
-        return np.mean(word_lens)
+        return float(np.mean(word_lens))
 
     def features(self, vocab=None):
         """Generate feature k/v pairs.
@@ -174,8 +174,10 @@ class Abstract(Model):
             split=split,
         )
 
-    def xy(self):
+    def xy(self, vocab=None):
+        """Generate x/y pairs for sentences.
+        """
         for i, sent in enumerate(self._sentences):
-            x = sent.features()
+            x = sent.x(vocab)
             y = i / (len(self.sentences)-1)
             yield x, y
