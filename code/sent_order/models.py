@@ -103,50 +103,53 @@ class Sentence(Model):
 
         return cls(text, tokens)
 
-    def ngrams(self, key, n, lower=False, sep='_'):
+    def ngrams(self, key, n, sep='_'):
         """Generate ngrams from tokens.
         """
         texts = [t[key] for t in self.tokens]
 
-        if lower:
-            texts = [t.lower() for t in texts]
-
         for ng in windowed(texts, n):
             yield f'_{key}{n}_{sep.join(ng)}'
 
-    # def ngram_counts(self, key, maxn=3, *args, **kwargs):
-        # """Generate ngram counts.
-        # """
-        # for n in range(1, maxn+1):
-            # counts = Counter(self.ngrams(key, n, *args, **kwargs))
-            # for ngram, count in counts.items():
-                # yield (key, n, ngram), count
+    def ngram_counts(self, key, maxn=3):
+        """Generate ngram counts.
+        """
+        for n in range(1, maxn+1):
+            counts = Counter(self.ngrams(key, n))
+            yield from counts.items()
 
-    # def word_count(self):
-        # return len(self.tokens)
+    def ngram_features(self):
+        """Generate un-filtered ngram features.
+        """
+        yield from self.ngram_counts('text')
+        yield from self.ngram_counts('lemma')
+        yield from self.ngram_counts('pos')
+        yield from self.ngram_counts('dep')
+        yield from self.ngram_counts('shape')
 
-    # def char_count(self):
-        # return len(self.text)
+    def word_count(self):
+        return len(self.tokens)
 
-    # def avg_word_len(self):
-        # word_lens = [len(t.text) for t in self.tokens]
-        # return np.mean(word_lens)
+    def char_count(self):
+        return len(self.text)
 
-    # def _features(self):
-        # """Generate feature k/v pairs.
-        # """
-        # yield from self.ngram_counts('text')
-        # yield from self.ngram_counts('lemma')
-        # yield from self.ngram_counts('pos')
-        # yield from self.ngram_counts('dep')
-        # yield from self.ngram_counts('shape')
+    def avg_word_len(self):
+        word_lens = [len(t.text) for t in self.tokens]
+        return np.mean(word_lens)
 
-        # yield 'word_count', self.word_count()
-        # yield 'char_count', self.char_count()
-        # yield 'avg_word_len', self.avg_word_len()
+    def features(self, vocab=None):
+        """Generate feature k/v pairs.
+        """
+        for ngram, count in self.ngram_features():
+            if not vocab or ngram in vocab:
+                yield ngram, count
 
-    # def features(self):
-        # return dict(self._features())
+        yield 'word_count', self.word_count()
+        yield 'char_count', self.char_count()
+        yield 'avg_word_len', self.avg_word_len()
+
+    def x(self, vocab=None):
+        return dict(self.features(vocab))
 
 
 class Abstract(Model):
