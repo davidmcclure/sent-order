@@ -1,6 +1,7 @@
 
 
 import click
+import os
 
 from pyspark.sql import Row
 
@@ -72,7 +73,7 @@ def main(src, dest):
             .toDF()
         )
 
-        path = os.path.join(dest, f'{split}-xy.json')
+        path = os.path.join(dest, f'xy-{split}.json')
 
         xy.write.mode('overwrite').json(path)
 
