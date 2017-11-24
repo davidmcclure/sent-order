@@ -69,7 +69,7 @@ def main(src, dest):
     for split in ('train', 'dev', 'test'):
 
         xy = (
-            df.rdd
+            df.filter(df.split==split).rdd
             .map(Abstract.from_row)
             .flatMap(lambda a: list(a.xy(vocab)))
             .map(lambda r: Row(x=r[0], y=r[1]))
