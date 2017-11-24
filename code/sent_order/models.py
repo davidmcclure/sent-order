@@ -112,41 +112,41 @@ class Sentence(Model):
             texts = [t.lower() for t in texts]
 
         for ng in windowed(texts, n):
-            yield sep.join(ng)
+            yield f'_{key}{n}_{sep.join(ng)}'
 
-    def ngram_counts(self, key, maxn=3, *args, **kwargs):
-        """Generate ngram counts.
-        """
-        for n in range(1, maxn+1):
-            counts = Counter(self.ngrams(key, n, *args, **kwargs))
-            for ngram, count in counts.items():
-                yield (key, n, ngram), count
+    # def ngram_counts(self, key, maxn=3, *args, **kwargs):
+        # """Generate ngram counts.
+        # """
+        # for n in range(1, maxn+1):
+            # counts = Counter(self.ngrams(key, n, *args, **kwargs))
+            # for ngram, count in counts.items():
+                # yield (key, n, ngram), count
 
-    def word_count(self):
-        return len(self.tokens)
+    # def word_count(self):
+        # return len(self.tokens)
 
-    def char_count(self):
-        return len(self.text)
+    # def char_count(self):
+        # return len(self.text)
 
-    def avg_word_len(self):
-        word_lens = [len(t.text) for t in self.tokens]
-        return np.mean(word_lens)
+    # def avg_word_len(self):
+        # word_lens = [len(t.text) for t in self.tokens]
+        # return np.mean(word_lens)
 
-    def _features(self):
-        """Generate feature k/v pairs.
-        """
-        yield from self.ngram_counts('text')
-        yield from self.ngram_counts('lemma')
-        yield from self.ngram_counts('pos')
-        yield from self.ngram_counts('dep')
-        yield from self.ngram_counts('shape')
+    # def _features(self):
+        # """Generate feature k/v pairs.
+        # """
+        # yield from self.ngram_counts('text')
+        # yield from self.ngram_counts('lemma')
+        # yield from self.ngram_counts('pos')
+        # yield from self.ngram_counts('dep')
+        # yield from self.ngram_counts('shape')
 
-        yield 'word_count', self.word_count()
-        yield 'char_count', self.char_count()
-        yield 'avg_word_len', self.avg_word_len()
+        # yield 'word_count', self.word_count()
+        # yield 'char_count', self.char_count()
+        # yield 'avg_word_len', self.avg_word_len()
 
-    def features(self):
-        return dict(self._features())
+    # def features(self):
+        # return dict(self._features())
 
 
 class Abstract(Model):

@@ -2,59 +2,65 @@
 
 import click
 
-from sent_order.session import sc, spark
+from sent_order.utils import get_spark
 from sent_order.models import Abstract
 
 
-def count_ngrams(abstract, key, n, lower):
-    for sent in abstract._sentences:
-        for ng in sent.ngrams(key, n, lower):
-            yield ng, 1
-
-
-def most_freq_ngrams(abstracts, key, n, depth, lower=False):
-    """Get the N most frequent ngrams.
+def count_ngrams(abstract, key, n):
+    """Generate (ngram, 1) pairs for an abstract.
     """
-    counts = abstracts \
-        .flatMap(lambda a: count_ngrams(a, key, n, lower)) \
-        .reduceByKey(lambda a, b: a + b) \
-        .toDF(('ngram', 'count')) \
-        .orderBy('count', ascending=False) \
+    for sent in abstract._sentences:
+        for ngram in sent.ngrams(key, n):
+            yield ngram, 1
+
+
+def most_freq_ngrams(df, key, n, depth):
+    """Get the most frequent ngrams of a given type.
+    """
+    counts = (
+        df.rdd
+        .map(Abstract.from_row)
+        .flatMap(lambda a: count_ngrams(a, key, n))
+        .reduceByKey(lambda a, b: a + b)
+        .toDF(('ngram', 'count'))
+        .orderBy('count', ascending=False)
         .head(depth)
+    )
 
     return [r.ngram for r in counts]
 
 
-def build_vocab(abstracts):
-    """Get set of ngram features.
+def build_vocab(df):
+    """Build the complete set of allowed ngram features.
     """
     vocab = []
 
     for n in (1, 2, 3):
-        vocab += most_freq_ngrams(abstracts, 'text', n, 1000, True)
+        vocab += most_freq_ngrams(df, 'text', n, 2000)
 
-    for key in ('lemma', 'pos', 'tag', 'dep', 'shape'):
+    for key in ('pos', 'tag', 'dep'):
         for n in (1, 2, 3):
-            vocab += most_freq_ngrams(abstracts, key, n, 200)
+            vocab += most_freq_ngrams(df, key, n, 200)
 
     return set(vocab)
 
 
 @click.command()
 @click.option('--src', default='/data/abstracts.parquet')
-def main(src):
+@click.option('--split', default=None)
+def main(src, split):
     """Count tokens.
     """
+    sc, spark = get_spark()
+
     df = spark.read.parquet(src)
 
-    train = df.filter(df.split=='train')
+    if split:
+        df = df.filter(df.split==split)
 
-    rdd = train.rdd.map(Abstract.from_row)
-
-    vocab = build_vocab(rdd)
+    vocab = build_vocab(df)
 
     print(vocab)
-    print(len(vocab))
 
 
 if __name__ == '__main__':
