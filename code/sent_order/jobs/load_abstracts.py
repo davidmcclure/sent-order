@@ -32,7 +32,7 @@ def main(src, dest):
 
         corpus = Corpus(path)
 
-        # Read lines, parallelize, partition.
+        # Read lines, partition.
         lines = list(corpus.abstract_lines())
         lines = sc.parallelize(lines, int(len(lines) / 1000))
 
@@ -40,6 +40,7 @@ def main(src, dest):
         split = splitext(basename(path))[0]
         parse_split = partial(parse_lines, split)
 
+        # Parse abstracts.
         res = lines.map(parse_split)
         results.append(res)
 

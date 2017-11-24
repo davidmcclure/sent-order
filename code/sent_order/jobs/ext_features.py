@@ -40,7 +40,7 @@ def build_vocab(df):
     for n in (1, 2, 3):
         vocab += most_freq_ngrams(df, 'text', n, 1000)
 
-    for key in ('pos', 'tag', 'dep'):
+    for key in ('pos', 'tag', 'dep', 'shape'):
         for n in (1, 2, 3):
             vocab += most_freq_ngrams(df, key, n, 100)
 
@@ -49,29 +49,32 @@ def build_vocab(df):
 
 @click.command()
 @click.option('--src', default='/data/abstracts.parquet')
-@click.option('--dest', default='/data/xy.json')
-@click.option('--split', default=None)
-def main(src, dest, split):
-    """Count tokens.
+@click.option('--dest', default='/data')
+def main(src, dest):
+    """Extract features.
     """
     sc, spark = get_spark()
 
     df = spark.read.parquet(src)
 
-    vocab = build_vocab(df)
+    # Build vocab on train.
+    train = df.filter(df.split=='train')
+    vocab = build_vocab(train)
 
-    if split:
-        df = df.filter(df.split==split)
+    # Features for train/dev/test.
+    for split in ('train', 'dev', 'test'):
 
-    xy = (
-        df.rdd
-        .map(Abstract.from_row)
-        .flatMap(lambda a: list(a.xy(vocab)))
-        .map(lambda r: Row(x=r[0], y=r[1]))
-        .toDF()
-    )
+        xy = (
+            df.rdd
+            .map(Abstract.from_row)
+            .flatMap(lambda a: list(a.xy(vocab)))
+            .map(lambda r: Row(x=r[0], y=r[1]))
+            .toDF()
+        )
 
-    xy.write.mode('overwrite').json(dest)
+        path = os.path.join(dest, f'{split}-xy.json')
+
+        xy.write.mode('overwrite').json(path)
 
 
 if __name__ == '__main__':
