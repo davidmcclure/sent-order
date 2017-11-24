@@ -39,11 +39,11 @@ def build_vocab(df):
     vocab = []
 
     for n in (1, 2, 3):
-        vocab += most_freq_ngrams(df, 'lemma', n, 2000)
+        vocab += most_freq_ngrams(df, 'text', n, 2000)
 
-    for key in ('pos', 'tag'):
+    for key in ('pos', 'tag', 'dep', 'shape'):
         for n in (1, 2, 3):
-            vocab += most_freq_ngrams(df, key, n, 10)
+            vocab += most_freq_ngrams(df, key, n, 1000)
 
     return set(vocab)
 
