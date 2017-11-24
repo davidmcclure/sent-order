@@ -58,9 +58,12 @@ def main(src, dest):
 
     df = spark.read.parquet(src)
 
-    # Build vocab on train.
     train = df.filter(df.split=='train')
+    train.cache()
+
+    # Build vocab on train.
     vocab = build_vocab(train)
+    print(vocab)
 
     # Features for train/dev/test.
     for split in ('train', 'dev', 'test'):
