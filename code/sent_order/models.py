@@ -103,6 +103,9 @@ class Sentence(Model):
 
         return cls(text, tokens)
 
+    def token_seq(self, key):
+        return [t[key] for t in self.tokens]
+
     def ngrams(self, key, n, sep='_'):
         """Generate ngrams from tokens.
         """
@@ -124,6 +127,7 @@ class Sentence(Model):
         yield from self.ngram_counts('text')
         yield from self.ngram_counts('lemma')
         yield from self.ngram_counts('pos')
+        yield from self.ngram_counts('tag')
         yield from self.ngram_counts('dep')
         yield from self.ngram_counts('shape')
 
@@ -181,3 +185,51 @@ class Abstract(Model):
             x = sent.x(vocab)
             y = i / (len(self.sentences)-1)
             yield x, y
+
+
+class FlatSentence(Model):
+
+    schema = T.StructType([
+        T.StructField('raw', T.StringType()),
+        T.StructField('text', T.ArrayType(T.StringType())),
+        T.StructField('lemma', T.ArrayType(T.StringType())),
+        T.StructField('pos', T.ArrayType(T.StringType())),
+        T.StructField('tag', T.ArrayType(T.StringType())),
+        T.StructField('dep', T.ArrayType(T.StringType())),
+        T.StructField('shape', T.ArrayType(T.StringType())),
+    ])
+
+    @classmethod
+    def from_sentence(cls, sent):
+        """Map in sentence.
+        """
+        return cls(
+            raw=sent.text,
+            text=sent.token_seq('text'),
+            lemma=sent.token_seq('lemma'),
+            pos=sent.token_seq('pos'),
+            tag=sent.token_seq('tag'),
+            dep=sent.token_seq('dep'),
+            shape=sent.token_seq('shape'),
+        )
+
+
+class FlatAbstract(Model):
+
+    schema = T.StructType([
+        T.StructField('id', T.StringType(), nullable=False),
+        T.StructField('tags', T.ArrayType(T.StringType())),
+        T.StructField('sentences', T.ArrayType(FlatSentence.schema)),
+    ])
+
+    @classmethod
+    def from_abstract(cls, abstract):
+        """Map in abstract.
+        """
+        sentences = map(FlatSentence.from_sentence, abstract._sentences)
+
+        return cls(
+            id=abstract.id,
+            tags=abstract.tags,
+            sentences=list(sentences),
+        )
