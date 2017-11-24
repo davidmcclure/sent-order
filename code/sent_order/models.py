@@ -139,7 +139,7 @@ class Sentence(Model):
 
     def avg_word_len(self):
         word_lens = [len(t.text) for t in self.tokens]
-        return float(np.mean(word_lens))
+        return sum(word_lens) / len(word_lens)
 
     def features(self, vocab=None):
         """Generate feature k/v pairs.
