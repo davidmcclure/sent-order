@@ -18,7 +18,7 @@ def main(src, dest):
     corpus = Corpus(src)
 
     # Read lines, partition.
-    lines = list(corpus.abstract_lines())[:10]
+    lines = list(corpus.abstract_lines())
     lines = sc.parallelize(lines)
 
     # Parse abstracts.
