@@ -2,51 +2,28 @@
 
 import click
 
-from glob import glob
-from os.path import basename, splitext
-from itertools import islice
-from functools import partial
-
-from pyspark.sql import DataFrame
-
-from sent_order.session import sc, spark
+from sent_order.utils import get_spark
 from sent_order.sources import Corpus
 from sent_order.models import Abstract
 
 
-def parse_lines(split, lines):
-    """Parse abstract lines.
-    """
-    return Abstract.from_lines(lines, split)
-
-
 @click.command()
-@click.option('--src', default='/data/abstracts/*.txt')
-@click.option('--dest', default='/data/abstracts.parquet')
+@click.option('--src', default='/data/abstracts/test.txt')
+@click.option('--dest', default='/data/test.json')
 def main(src, dest):
     """Ingest abstracts.
     """
-    results = []
+    sc, spark = get_spark()
 
-    for path in glob(src):
+    corpus = Corpus(src)
 
-        corpus = Corpus(path)
+    # Read lines, partition.
+    lines = list(corpus.abstract_lines())[:10]
+    lines = sc.parallelize(lines)
 
-        # Read lines, partition.
-        lines = list(corpus.abstract_lines())
-        lines = sc.parallelize(lines, int(len(lines) / 1000))
-
-        # Get split name, bind to worker.
-        split = splitext(basename(path))[0]
-        parse_split = partial(parse_lines, split)
-
-        # Parse abstracts.
-        res = lines.map(parse_split)
-        results.append(res)
-
-    df = sc.union(results).toDF(Abstract.schema)
-
-    df.write.mode('overwrite').parquet(dest)
+    # Parse abstracts.
+    df = lines.map(Abstract.from_lines).toDF(Abstract.schema)
+    df.write.mode('overwrite').json(dest)
 
 
 if __name__ == '__main__':
