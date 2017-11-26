@@ -86,150 +86,18 @@ class Token(Model):
         )
 
 
-class Sentence(Model):
+class Novel(Model):
 
     schema = T.StructType([
+        T.StructField('book_id', T.IntegerType()),
+        T.StructField('filename', T.StringType()),
+        T.StructField('title', T.StringType()),
+        T.StructField('auth_last', T.StringType()),
+        T.StructField('auth_first', T.StringType()),
+        T.StructField('auth_id', T.StringType()),
+        T.StructField('publ_date', T.IntegerType()),
+        T.StructField('source', T.StringType()),
+        T.StructField('clean', T.BooleanType()),
         T.StructField('text', T.StringType()),
         T.StructField('tokens', T.ArrayType(Token.schema)),
     ])
-
-    @classmethod
-    def from_text(cls, text):
-        """Parse sentence.
-        """
-        doc = nlp(text)
-
-        tokens = list(map(Token.from_spacy_token, doc))
-
-        return cls(text, tokens)
-
-    def token_seq(self, key):
-        return [t[key] for t in self.tokens]
-
-    def ngrams(self, key, n, sep='_'):
-        """Generate ngrams from tokens.
-        """
-        texts = [t[key] for t in self.tokens]
-
-        for ng in windowed(texts, n):
-            yield f'_{key}{n}_{sep.join(ng)}'
-
-    def ngram_counts(self, key, maxn=3):
-        """Generate ngram counts.
-        """
-        for n in range(1, maxn+1):
-            counts = Counter(self.ngrams(key, n))
-            yield from counts.items()
-
-    def ngram_features(self):
-        """Generate un-filtered ngram features.
-        """
-        yield from self.ngram_counts('text')
-        yield from self.ngram_counts('lemma')
-        yield from self.ngram_counts('pos')
-        yield from self.ngram_counts('tag')
-        yield from self.ngram_counts('dep')
-        yield from self.ngram_counts('shape')
-
-    def word_count(self):
-        return len(self.tokens)
-
-    def char_count(self):
-        return len(self.text)
-
-    def avg_word_len(self):
-        word_lens = [len(t.text) for t in self.tokens]
-        return sum(word_lens) / len(word_lens)
-
-    def features(self, vocab=None):
-        """Generate feature k/v pairs.
-        """
-        for ngram, count in self.ngram_features():
-            if not vocab or ngram in vocab:
-                yield ngram, count
-
-        yield 'word_count', self.word_count()
-        yield 'char_count', self.char_count()
-        yield 'avg_word_len', self.avg_word_len()
-
-    def x(self, vocab=None):
-        return dict(self.features(vocab))
-
-
-class Abstract(Model):
-
-    schema = T.StructType([
-        T.StructField('id', T.StringType(), nullable=False),
-        T.StructField('tags', T.ArrayType(T.StringType())),
-        T.StructField('sentences', T.ArrayType(Sentence.schema)),
-        T.StructField('split', T.StringType()),
-    ])
-
-    @classmethod
-    def from_lines(cls, lines, split):
-        """Parse abstract lines.
-        """
-        sentences = list(map(Sentence.from_text, lines[2:]))
-
-        return cls(
-            id=lines[0],
-            tags=lines[1].split(),
-            sentences=sentences,
-            split=split,
-        )
-
-    def xy(self, vocab=None):
-        """Generate x/y pairs for sentences.
-        """
-        for i, sent in enumerate(self._sentences):
-            x = sent.x(vocab)
-            y = i / (len(self.sentences)-1)
-            yield x, y
-
-
-class FlatSentence(Model):
-
-    schema = T.StructType([
-        T.StructField('raw', T.StringType()),
-        T.StructField('text', T.ArrayType(T.StringType())),
-        T.StructField('lemma', T.ArrayType(T.StringType())),
-        T.StructField('pos', T.ArrayType(T.StringType())),
-        T.StructField('tag', T.ArrayType(T.StringType())),
-        T.StructField('dep', T.ArrayType(T.StringType())),
-        T.StructField('shape', T.ArrayType(T.StringType())),
-    ])
-
-    @classmethod
-    def from_sentence(cls, sent):
-        """Map in sentence.
-        """
-        return cls(
-            raw=sent.text,
-            text=sent.token_seq('text'),
-            lemma=sent.token_seq('lemma'),
-            pos=sent.token_seq('pos'),
-            tag=sent.token_seq('tag'),
-            dep=sent.token_seq('dep'),
-            shape=sent.token_seq('shape'),
-        )
-
-
-class FlatAbstract(Model):
-
-    schema = T.StructType([
-        T.StructField('id', T.StringType(), nullable=False),
-        T.StructField('tags', T.ArrayType(T.StringType())),
-        T.StructField('sentences', T.ArrayType(FlatSentence.schema)),
-    ])
-
-    @classmethod
-    def from_abstract(cls, abstract):
-        """Map in abstract.
-        """
-        sentences = map(FlatSentence.from_sentence, abstract._sentences)
-
-        return cls(
-            id=abstract.id,
-            tags=abstract.tags,
-            sentences=list(sentences),
-        )
