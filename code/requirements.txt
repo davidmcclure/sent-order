@@ -5,5 +5,8 @@ jupyter
 cached-property
 boltons
 inflection
+boto3
+textblob
+scandir
 
 spacy==2.0.3

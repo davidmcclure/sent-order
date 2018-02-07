@@ -3,14 +3,15 @@
 import spacy
 import re
 import numpy as np
+import os
 
 from collections import namedtuple, Counter
 from pyspark.sql import SparkSession, types as T
 from inflection import singularize
 from boltons.iterutils import windowed
+from textblob import TextBlob
 
-
-nlp = spacy.load('en')
+from . import fs
 
 
 class ModelMeta(type):
@@ -65,25 +66,8 @@ class Token(Model):
 
     schema = T.StructType([
         T.StructField('text', T.StringType()),
-        T.StructField('lemma', T.StringType()),
-        T.StructField('pos', T.StringType()),
         T.StructField('tag', T.StringType()),
-        T.StructField('dep', T.StringType()),
-        T.StructField('shape', T.StringType()),
     ])
-
-    @classmethod
-    def from_spacy_token(cls, token):
-        """Map in token.
-        """
-        return cls(
-            text=token.text,
-            lemma=token.lemma_,
-            pos=token.pos_,
-            tag=token.tag_,
-            dep=token.dep_,
-            shape=token.shape_,
-        )
 
 
 class Novel(Model):
@@ -101,3 +85,31 @@ class Novel(Model):
         T.StructField('text', T.StringType()),
         T.StructField('tokens', T.ArrayType(Token.schema)),
     ])
+
+    @classmethod
+    def from_metadata(cls, metadata, text_dir):
+        """Parse novel.
+        """
+        text_path = os.path.join(text_dir, metadata['FILENAME'])
+
+        fh = fs.read(text_path)
+
+        text = fh.read().decode('utf8')
+
+        blob = TextBlob(text)
+
+        tokens = list(map(lambda t: Token(*t), blob.tags))
+
+        return cls(
+            book_id=metadata['BOOK_ID'],
+            filename=metadata['FILENAME'],
+            title=metadata['TITLE'],
+            auth_last=metadata['AUTH_LAST'],
+            auth_first=metadata['AUTH_FIRST'],
+            auth_id=metadata['AUTH_ID'],
+            publ_date=metadata['PUBL_DATE'],
+            source=metadata['SOURCE'],
+            clean=metadata['CLEAN?'] == 'c',
+            text=text,
+            tokens=tokens,
+        )
